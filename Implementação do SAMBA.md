@@ -1,11 +1,11 @@
 
 # Implementação do Samba 
 
-## Objetivos
+## Objetivo
 Implementar um serviço que forneça o compartilhamento de arquivos com o SAMBA.
 
 ### Observações iniciais
-* Lembre-se de se conectar na VM correta. Para isso, utilize o comando ```ssh```:
+* Lembre-se de conectar-se na VM correta. Para isso, utilize o comando ```ssh```:
 ```bash
 $ ssh administrador@10.9.13.116
 ```
@@ -62,13 +62,12 @@ $ sudo apt install samba
 ```bash
 $ whereis samba
 ```
-> Apresentação do status do samba no sistema. 
+> Apresentação do status do samba no sistema:
 ```bash
 $ sudo systemctl status smbd
 ```
-(aqui terá uma foto representando esse status)
 
-> Exibição das portas que estão sendo utilizadas. 
+> Exibição das portas que estão sendo utilizadas: 
 ```bash
 $ netstat -an | grep LISTEN
 ```
@@ -83,7 +82,7 @@ $ sudo bash -c 'grep -v -E "^#|^;" /etc/samba/smb.conf.backup | grep . > /etc/sa
 ```
 
 ### Passo 6
-* Editar o arquivo ```/eetc/samba/smb.conf```, de modo a adicionar as interfaces de rede e alterar a seção ```public```.
+* Editar o arquivo ```/etc/samba/smb.conf```, de modo a adicionar as interfaces de rede e alterar a seção ```public```.
 > Lembre-se de separar o nome das interfaces por espaços. 
 ```bash
 $ sudo nano /etc/samba/smb.conf
@@ -95,7 +94,7 @@ $ sudo nano /etc/samba/smb.conf
    netbios name = samba-srv
    security = user
    server string = %h server (Samba, Ubuntu)
-   interfaces = 127.0.0.1/8 enp0s3
+   interfaces = 127.0.0.1/8 ens160 ens192
    bind interfaces only = yes
    log file = /var/log/samba/log.%m
    max log size = 1000
@@ -150,3 +149,62 @@ $ sudo systemctl restart smbd
 ```
 
 ### Passo 7
+* Criar um usuário para que ele possa utilizar o compartilhamento de arquivos via ```samba```.
+> Recomendação de usuário e de senha:
+> 
+> ```usuário```: aluno
+> 
+> ```senha```: alunoifal
+```bash
+$ sudo adduser aluno
+Adding user `aluno' ...
+Adding new group `aluno' (1001) ...
+Adding new user `aluno' (1001) with group `aluno' ...
+Creating home directory `/home/aluno' ...
+Copying files from `/etc/skel' ...
+New password: 
+Retype new password: 
+passwd: password updated successfully
+Changing the user information for aluno
+Enter the new value, or press ENTER for the default
+	Full Name []: Aluno de SRED no IFAL Arapiraca
+	Room Number []: 
+	Work Phone []: 
+	Home Phone []: 
+	Other []: 
+Is the information correct? [Y/n] y
+```
+* Vincular o usuário criado ao serviço samba, de modo que ele possa ter acesso ao compartilhamento de arquivos. 
+> Utilize a mesma senha daquela utilizada para a criação do usuário: ```alunoifal```. 
+```bash
+$ sudo smbpasswd -a aluno
+New SMB password:
+Retype new SMB password:
+Added user aluno.
+
+$ sudo usermod -aG sambashare aluno
+```
+
+### Passo 8
+* Criar um diretório para compartilhar o samba em rede. 
+```bash
+$ mkdir sambashare
+$ sudo mkdir -p /samba/public
+```
+
+* Habilitar permissões para que qualquer um utilize o compartilhamento de arquivos de maneira pública.
+```bash
+$ cd /samba
+$ sudo chown -R nobody:nogroup /samba/public
+$ ls -la
+$ sudo chmod -R 0775 /samba/public
+$ ls -la
+$ sudo chgrp sambashare /samba/public
+$ ls -la
+```
+
+## Verificação da efetividade dos passos realizados
+* Digite o endereço IP da máquina responsável pelo servidor samba no ```Windows Explorer```, por exemplo, da seguinte forma:
+```bash
+\\10.9.13.116
+```
